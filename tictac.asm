@@ -8,14 +8,24 @@ org 0x100
     int 0x10
 %endmacro
 
-; we are on second part
+; we are on second screen
 %macro set_playground_parts 5
     ;       skips first part ;rows           ; columns
-    mov di, ((80 * 25 * 2) + (80 * %1 * 2) + (18 * 2))
+    mov di, ((80 * 25 * 2) + (80 * (%1) * 2) + (18 * 2))
     mov dx, %2
     mov ah, %3
     mov si, %4
     mov cx, %5
+    call fill_with_pattern
+%endmacro
+
+%macro render_sprite 6
+    ;       skips first part ;rows           ; columns
+    mov di, ((80 * 25 * 2) + (80 * (%1) * 2) + ((%2) * 2))
+    mov dx, %3
+    mov ah, %4
+    mov si, %5
+    mov cx, %6
     call fill_with_pattern
 %endmacro
 
@@ -35,12 +45,22 @@ logo    db "          _                _    _           ", 0
         db "| __| |/ __| | __/ _' |/ __| | __/ _ \ / _ \", 0
         db "| |_| | (__  | || (_| | (__  | || (_) |  __/", 0
         db " \__|_|\___|  \__\__,_|\___|  \__\___/ \___|", 0        
-logo_len equ     $-logo
+logo_len equ     $ - logo
 
-line_full       db "--------------------------------------------"
-line_columns    db "|              |              |            |"
+line_full       db "+--------------------------------------------+"
+line_columns    db "|              |              |              |"
+
+cross db    "XX  XX", 0
+      db    "  XX  ", 0
+      db    "XX  XX", 0
+cc_sprite_len equ     $ - cross
+
+circle db   " OOOO ", 0
+       db   "OO  OO", 0
+       db   " OOOO ", 0
 
 
+board: equ 0x300
 
 section .text
 
@@ -57,6 +77,7 @@ start:
     ; switch to text mode
     set_text_mode
 
+    ; show logo
     ;       move rows    move columns
     mov di, 80 * 5 * 2 + (18 * 2)
     mov dx, 44
@@ -65,34 +86,15 @@ start:
     mov cx, logo_len
     call fill_with_pattern
 
-    ; render playfield
-    set_playground_parts 5, 44, 0x0e, line_full, 44
 
-    set_playground_parts 6, 44, 0x0e, line_columns, 44
-    set_playground_parts 7, 44, 0x0e, line_columns, 44
-    set_playground_parts 8, 44, 0x0e, line_columns, 44
-    set_playground_parts 9, 44, 0x0e, line_columns, 44
+    call render_playfield
+    ;call init_playfield
 
-    set_playground_parts 10, 44, 0x0e, line_full, 44
-
-    set_playground_parts 11, 44, 0x0e, line_columns, 44
-    set_playground_parts 12, 44, 0x0e, line_columns, 44
-    set_playground_parts 13, 44, 0x0e, line_columns, 44
-    set_playground_parts 14, 44, 0x0e, line_columns, 44
-
-    set_playground_parts 15, 44, 0x0e, line_full, 44
-
-    set_playground_parts 16, 44, 0x0e, line_columns, 44
-    set_playground_parts 17, 44, 0x0e, line_columns, 44
-    set_playground_parts 18, 44, 0x0e, line_columns, 44
-    set_playground_parts 19, 44, 0x0e, line_columns, 44
-
-    set_playground_parts 20, 44, 0x0e, line_full, 44
-
-
+; show logo for some time
     mov cl, 0xa0
     call delay
 
+; scroll to gameboard
     mov di, 80
     xor si, si
 .loop:
@@ -107,6 +109,36 @@ start:
 
     cmp si, 26
     jnz .loop
+
+; gameloop
+    ;xor cx, cx
+gameloop:
+
+    call read_key
+    ; ESC for exit
+    cmp al, 0x1b
+    jz end
+    ; X key for reset
+    cmp al, 0x78
+    jz reset
+
+    ; X
+    render_sprite 6, 23, 6, 0x0e, cross, cc_sprite_len
+    call read_key
+
+    ; O
+    render_sprite 6, 38, 6, 0x0e, circle, cc_sprite_len
+    call read_key
+
+    render_sprite 6, 23 + 7 + 8 + 15, 6, 0x0e, circle, cc_sprite_len
+    call read_key
+
+    jmp gameloop
+
+reset:
+    call render_playfield
+    ;call init_playfield
+    jmp gameloop
     
 end:
 
@@ -123,6 +155,41 @@ end:
 
     ; exit
     int 0x20
+; end of gameloop
+
+
+render_playfield:
+    ; render playfield
+    set_playground_parts 5, 46, 0x0e, line_full, 46
+
+    set_playground_parts 6, 46, 0x0e, line_columns, 46
+    set_playground_parts 7, 46, 0x0e, line_columns, 46
+    set_playground_parts 8, 46, 0x0e, line_columns, 46
+    set_playground_parts 9, 46, 0x0e, line_columns, 46
+
+    set_playground_parts 10, 46, 0x0e, line_full, 46
+
+    set_playground_parts 11, 46, 0x0e, line_columns, 46
+    set_playground_parts 12, 46, 0x0e, line_columns, 46
+    set_playground_parts 13, 46, 0x0e, line_columns, 46
+    set_playground_parts 14, 46, 0x0e, line_columns, 46
+
+    set_playground_parts 15, 46, 0x0e, line_full, 46
+
+    set_playground_parts 16, 46, 0x0e, line_columns, 46
+    set_playground_parts 17, 46, 0x0e, line_columns, 46
+    set_playground_parts 18, 46, 0x0e, line_columns, 46
+    set_playground_parts 19, 46, 0x0e, line_columns, 46
+
+    set_playground_parts 20, 46, 0x0e, line_full, 46
+    ret
+
+; clear 12 bytes
+init_playfield:
+    mov dword [board], 0
+    mov dword [board + 4], 0
+    mov dword [board + 8], 0
+    ret
 
 interrupt:
     pusha
@@ -180,15 +247,21 @@ fill_with_pattern:
     add di, 80 * 2
     sub di, dx
     
-    jmp .skipwite
+    jmp .skipwrite
 
 .next:
     stosw
     
-.skipwite:
+.skipwrite:
     inc si
     loop .loop
 
+    ret
+
+; output: al - keycode
+read_key:
+    xor ax, ax
+    int 0x16
     ret
 
 ; cx - new addr
@@ -201,7 +274,6 @@ hw_scroll:
     and al,8
     jnz .2
    
-    ;mov cx,new_addr
     mov dx,0x03d4
     mov al,0x0c
     mov ah,ch
