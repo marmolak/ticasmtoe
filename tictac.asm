@@ -3,6 +3,8 @@ org 0x100
 
 %define VIDEO_MEM 0xb800
 
+%define next_screen (80 * 25 * 2)
+
 %macro set_text_mode 0
     mov al, 0x03
     int 0x10
@@ -10,18 +12,12 @@ org 0x100
 
 ; we are on second screen
 %macro set_playground_parts 5
-    ;       skips first part ;rows           ; columns
-    mov di, ((80 * 25 * 2) + (80 * (%1) * 2) + (18 * 2))
-    mov dx, %2
-    mov ah, %3
-    mov si, %4
-    mov cx, %5
-    call fill_with_pattern
+    render_sprite (%1), 18, (%2), (%3), (%4), (%5)
 %endmacro
 
 %macro render_sprite 6
     ;       skips first part ;rows           ; columns
-    mov di, ((80 * 25 * 2) + (80 * (%1) * 2) + ((%2) * 2))
+    mov di, (next_screen + (80 * (%1) * 2) + ((%2) * 2))
     mov dx, %3
     mov ah, %4
     mov si, %5
@@ -31,9 +27,10 @@ org 0x100
 
 
 section .data
-val: db 0
+delay_val: db 0
 
-logo    db "          _                _    _           ", 0
+logo    db "                                            ", 0
+        db "          _                _    _           ", 0
         db "         | |              | |  ( )          ", 0
         db "     _ __| |__   __ _  ___| | _|/ ___       ", 0
         db "    | '__| '_ \ / _` |/ __| |/ / / __|      ", 0
@@ -59,8 +56,27 @@ circle db   " OOOO ", 0
        db   "OO  OO", 0
        db   " OOOO ", 0
 
+player db 'Player:  '
+splay  db 0
+state  dw 0
 
-board: equ 0x300
+board   dw 0
+        dw 0
+        dw 0
+        dw 0
+        dw 0
+
+          
+positions dw (23 * 2)
+          dw (38 * 2)
+          dw (53 * 2)
+          dw (23 * 2)
+          dw (38 * 2)
+          dw (53 * 2)
+          dw (23 * 2)
+          dw (38 * 2)
+          dw (53 * 2)
+          dw (23 * 2)
 
 section .text
 
@@ -79,22 +95,21 @@ start:
 
     ; show logo
     ;       move rows    move columns
-    mov di, 80 * 5 * 2 + (18 * 2)
+    mov di, (80 * 5 * 2) + (18 * 2)
     mov dx, 44
     mov ah, 0x0e
     mov si, logo
     mov cx, logo_len
     call fill_with_pattern
 
-
-    call render_playfield
-    ;call init_playfield
+    ; render playfield and init game
+    call reset
 
 ; show logo for some time
     mov cl, 0xa0
     call delay
 
-; scroll to gameboard
+; scroll to playfield
     mov di, 80
     xor si, si
 .loop:
@@ -109,9 +124,7 @@ start:
 
     cmp si, 26
     jnz .loop
-
-; gameloop
-    ;xor cx, cx
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 gameloop:
 
     call read_key
@@ -120,25 +133,74 @@ gameloop:
     jz end
     ; X key for reset
     cmp al, 0x78
-    jz reset
+    jz call_reset
+
+    ; position of X or O
+    mov bx, [state]
+    add bx, bx
+    ; positions are multiplied by 2 - column part
+    mov di, next_screen
+    add di, [positions + bx]
+    ; row (line) part
+    mov bx, 6
+    mov ax, 160
+    mul bx
+    add di, ax
+
+    cmp byte [splay], 0x58
+    mov si, circle
+    mov byte [splay], 0x58
+    jnz .render
+    mov si, cross
+    mov byte [splay], 0x4f
+
+.render:
+    ;original: mov di, (next_screen + (80 * (6) * 2) + ((23) * 2))
+    mov dx, 6
+    mov ah, 0x0e
+    mov cx, cc_sprite_len
+    call fill_with_pattern
+
+    mov bx, [state]
+    cmp bx, 9
+    jz call_reset
+
+    inc bx
+    mov [state], bx
+
 
     ; X
-    render_sprite 6, 23, 6, 0x0e, cross, cc_sprite_len
-    call read_key
+    ;render_sprite 6, 23, 6, 0x0e, cross, cc_sprite_len
+    ;call read_key
 
     ; O
-    render_sprite 6, 38, 6, 0x0e, circle, cc_sprite_len
-    call read_key
+    ;render_sprite 6, 38, 6, 0x0e, circle, cc_sprite_len
+    ;call read_key
 
-    render_sprite 6, 23 + 7 + 8 + 15, 6, 0x0e, circle, cc_sprite_len
-    call read_key
+    ;render_sprite 6, 23 + 7 + 8 + 15, 6, 0x0e, circle, cc_sprite_len
+    ;call read_key
 
+    jmp gameloop
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+call_reset:
+    call reset
     jmp gameloop
 
 reset:
     call render_playfield
-    ;call init_playfield
-    jmp gameloop
+    set_playground_parts 4, 18, 0x0e, player, 9
+
+    ; X
+    mov ax, 0x0e58
+    mov byte [splay], 0x58
+    mov di, next_screen + (80 * 4 * 2) + (26 * 2)
+    call put_char
+
+    mov word [state], 0x0000
+
+    call init_playfield
+    ret
     
 end:
 
@@ -146,7 +208,7 @@ end:
     call delay
 
     ; reset viewport
-    mov cx, 0
+    xor cx, cx
     call hw_scroll
 
     ; reset text mode
@@ -184,19 +246,19 @@ render_playfield:
     set_playground_parts 20, 46, 0x0e, line_full, 46
     ret
 
-; clear 12 bytes
+; clear 10 bytes
 init_playfield:
     mov dword [board], 0
     mov dword [board + 4], 0
-    mov dword [board + 8], 0
+    mov word [board + 8], 0
     ret
 
 interrupt:
     pusha
 
-    mov ax, [val]
+    mov ax, [delay_val]
     dec ax
-    mov [val], ax
+    mov [delay_val], ax
 
     popa
     iret
@@ -204,17 +266,15 @@ interrupt:
 ; cl - ticks - 1 is ok
 delay:
     push ax
-    push dx
     push cx
 
-    mov byte [val], cl
+    mov byte [delay_val], cl
 .delay:
-    mov al, [val]
+    mov al, [delay_val]
     cmp al, 0
     jnz .delay
 
     pop cx
-    pop dx
     pop ax
     ret
 
@@ -258,11 +318,21 @@ fill_with_pattern:
 
     ret
 
+; ax - color + char 
+; di - where
+put_char:
+    mov bx, VIDEO_MEM
+    mov es, bx
+    stosw
+    ret
+
 ; output: al - keycode
 read_key:
     xor ax, ax
     int 0x16
     ret
+
+
 
 ; cx - new addr
 hw_scroll:
