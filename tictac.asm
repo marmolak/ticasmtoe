@@ -137,7 +137,7 @@ gameloop:
 
     ; position of X or O
     mov bx, [state]
-    add bx, bx
+    shl bx, 1
     ; positions are multiplied by 2 - column part
     mov di, next_screen
     add di, [positions + bx]
@@ -296,7 +296,7 @@ fill_with_color:
 fill_with_pattern:
     mov bx, VIDEO_MEM
     mov es, bx
-    add dx, dx
+    shl dx, 1
 
 .loop:
     mov al, byte [si]
