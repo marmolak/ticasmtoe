@@ -154,6 +154,7 @@ gameloop:
     mov si, cross
     mov byte [splay], 0x4f
 
+; render sprite of X or O
 .render:
     ;original: mov di, (next_screen + (80 * (6) * 2) + ((23) * 2))
     mov dx, 6
@@ -165,20 +166,15 @@ gameloop:
     cmp bx, 9
     jz call_reset
 
+; update num of moves
     inc bx
     mov [state], bx
 
-
-    ; X
-    ;render_sprite 6, 23, 6, 0x0e, cross, cc_sprite_len
-    ;call read_key
-
-    ; O
-    ;render_sprite 6, 38, 6, 0x0e, circle, cc_sprite_len
-    ;call read_key
-
-    ;render_sprite 6, 23 + 7 + 8 + 15, 6, 0x0e, circle, cc_sprite_len
-    ;call read_key
+; render who is on move
+    mov ah, 0x0e
+    mov al, byte [splay]
+    mov di, next_screen + (80 * 4 * 2) + (26 * 2)
+    call put_char
 
     jmp gameloop
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
