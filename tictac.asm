@@ -264,15 +264,6 @@ delay:
     pop ax
     ret
 
-; ax - color
-; di - from
-fill_with_color:
-    mov bx, VIDEO_MEM
-	mov es, bx
-    mov cx, 80 * 25
-	rep stosw
-    ret
-
 ; ah - color
 ; cx - len
 ; dx - linelen
