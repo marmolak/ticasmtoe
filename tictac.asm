@@ -118,7 +118,17 @@ start:
 .loop:
     mov ax, si
     inc si
-    mul di
+
+    ;mul di
+    mov bx, ax
+    ; n<<3 + n<<1 = n*10
+    shl ax, 3
+    shl bx, 1
+    add ax, bx
+    ; n * 8
+    shl ax, 3
+
+
     mov cx, ax
     call hw_scroll
 
