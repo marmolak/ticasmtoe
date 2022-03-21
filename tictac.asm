@@ -199,10 +199,6 @@ reset:
     ret
     
 end:
-
-    mov cl, 0x12
-    call delay
-
     ; reset viewport
     xor cx, cx
     call hw_scroll
