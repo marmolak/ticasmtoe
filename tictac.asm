@@ -12,16 +12,16 @@ org 0x100
 
 ; we are on second screen
 %macro set_playground_parts 5
-    render_sprite (%1), 18, (%2), (%3), (%4), (%5)
+    render_sprite next_screen, (%1), 18, (%2), (%3), (%4), (%5)
 %endmacro
 
-%macro render_sprite 6
+%macro render_sprite 7
     ;       skips first part ;rows           ; columns
-    mov di, (next_screen + (80 * (%1) * 2) + ((%2) * 2))
-    mov dx, %3
-    mov ah, %4
-    mov si, %5
-    mov cx, %6
+    mov di, ((%1) + (80 * (%2) * 2) + ((%3) * 2))
+    mov dx, %4
+    mov ah, %5
+    mov si, %6
+    mov cx, %7
     call fill_with_pattern
 %endmacro
 
@@ -95,12 +95,7 @@ start:
 
     ; show logo
     ;       move rows    move columns
-    mov di, (80 * 5 * 2) + (18 * 2)
-    mov dx, 44
-    mov ah, 0x0e
-    mov si, logo
-    mov cx, logo_len
-    call fill_with_pattern
+    render_sprite 0, 5, 18, 44, 0x0e, logo, logo_len
 
     ; render playfield and init game
     call reset
