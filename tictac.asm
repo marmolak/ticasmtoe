@@ -3,12 +3,15 @@ org 0x100
 
 %define VIDEO_MEM 0xb800
 
-%define next_screen (80 * 25 * 2)
-
 %macro set_text_mode 0
     mov al, 0x03
     int 0x10
 %endmacro
+
+%define next_screen (80 * 25 * 2)
+%define row(r) (80 * (r) * 2)
+%define col(c) ((c) * 2)
+%define row_col(r, c) (row((r)) + col((c)))
 
 ; we are on second screen
 %macro set_playground_parts 5
@@ -17,18 +20,19 @@ org 0x100
 
 ; ah, dx and cx must be initialized before using this macro
 %macro set_playground_parts_opti 2
-    mov di, (next_screen + (80 * (%1) * 2) + (18 * 2))
+    ;mov di, (next_screen + (80 * (%1) * 2) + (18 * 2))
+    mov di, next_screen + row_col((%1), 18)
     mov si, (%2)
     call fill_with_pattern
 %endmacro
 
 %macro render_sprite 7
     ;       skips first part ;rows           ; columns
-    mov di, ((%1) + (80 * (%2) * 2) + ((%3) * 2))
-    mov dx, %4
-    mov ah, %5
-    mov si, %6
-    mov cx, %7
+    mov di, (%1) + row_col((%2), (%3))
+    mov dx, (%4)
+    mov ah, (%5)
+    mov si, (%6)
+    mov cx, (%7)
     call fill_with_pattern
 %endmacro
 
@@ -172,7 +176,7 @@ gameloop:
 ; render who is on move
     mov ah, 0x0e
     mov al, byte [splay]
-    mov di, next_screen + (80 * 4 * 2) + (26 * 2)
+    mov di, next_screen + row_col(4, 26)
     call put_char
 
     jmp gameloop
@@ -189,10 +193,10 @@ reset:
     ; X
     mov ax, 0x0e58
     mov byte [splay], 0x58
-    mov di, next_screen + (80 * 4 * 2) + (26 * 2)
+    mov di, next_screen + row_col(4, 26)
     call put_char
 
-    mov word [state], 0x0000
+    mov word [state], 0
 
     call init_playfield
     ret
@@ -320,8 +324,6 @@ read_key:
     xor ax, ax
     int 0x16
     ret
-
-
 
 ; cx - new addr
 hw_scroll:
