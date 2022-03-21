@@ -15,6 +15,13 @@ org 0x100
     render_sprite next_screen, (%1), 18, (%2), (%3), (%4), (%5)
 %endmacro
 
+; ah, dx and cx must be initialized before using this macro
+%macro set_playground_parts_opti 2
+    mov di, (next_screen + (80 * (%1) * 2) + (18 * 2))
+    mov si, (%2)
+    call fill_with_pattern
+%endmacro
+
 %macro render_sprite 7
     ;       skips first part ;rows           ; columns
     mov di, ((%1) + (80 * (%2) * 2) + ((%3) * 2))
@@ -82,12 +89,10 @@ section .text
 start:
 
     ; set 0x1c interrup vector
-    push ds
-    push 0
-    pop ds
-    ds mov word [0x1c * 4], interrupt  ; offset
-    ds mov word [0x1c * 4 + 2], cs     ; segment
-    pop ds
+    xor ax, ax
+    mov es, ax
+    es mov word [0x1c * 4], interrupt  ; offset
+    es mov word [0x1c * 4 + 2], cs     ; segment
 
     ; switch to text mode
     set_text_mode
@@ -200,36 +205,41 @@ end:
     ; reset text mode
     set_text_mode
 
-
     ; exit
-    int 0x20
+    ; poor man's: int 0x20
+    ret
 ; end of gameloop
 
 
 render_playfield:
     ; render playfield
-    set_playground_parts 5, 46, 0x0e, line_full, 46
 
-    set_playground_parts 6, 46, 0x0e, line_columns, 46
-    set_playground_parts 7, 46, 0x0e, line_columns, 46
-    set_playground_parts 8, 46, 0x0e, line_columns, 46
-    set_playground_parts 9, 46, 0x0e, line_columns, 46
+    mov cx, 46
+    mov dx, 46
+    mov ah, 0x0e
 
-    set_playground_parts 10, 46, 0x0e, line_full, 46
+    set_playground_parts_opti 5, line_full
 
-    set_playground_parts 11, 46, 0x0e, line_columns, 46
-    set_playground_parts 12, 46, 0x0e, line_columns, 46
-    set_playground_parts 13, 46, 0x0e, line_columns, 46
-    set_playground_parts 14, 46, 0x0e, line_columns, 46
+    set_playground_parts_opti 6, line_columns
+    set_playground_parts_opti 7, line_columns
+    set_playground_parts_opti 8, line_columns
+    set_playground_parts_opti 9, line_columns
 
-    set_playground_parts 15, 46, 0x0e, line_full, 46
+    set_playground_parts_opti 10, line_full
 
-    set_playground_parts 16, 46, 0x0e, line_columns, 46
-    set_playground_parts 17, 46, 0x0e, line_columns, 46
-    set_playground_parts 18, 46, 0x0e, line_columns, 46
-    set_playground_parts 19, 46, 0x0e, line_columns, 46
+    set_playground_parts_opti 11, line_columns
+    set_playground_parts_opti 12, line_columns
+    set_playground_parts_opti 13, line_columns
+    set_playground_parts_opti 14, line_columns
 
-    set_playground_parts 20, 46, 0x0e, line_full, 46
+    set_playground_parts_opti 15, line_full
+
+    set_playground_parts_opti 16, line_columns
+    set_playground_parts_opti 17, line_columns
+    set_playground_parts_opti 18, line_columns
+    set_playground_parts_opti 19, line_columns
+
+    set_playground_parts_opti 20, line_full
     ret
 
 ; clear 10 bytes
@@ -242,9 +252,7 @@ init_playfield:
 interrupt:
     pusha
 
-    mov ax, [delay_val]
-    dec ax
-    mov [delay_val], ax
+    dec byte [delay_val]
 
     popa
     iret
@@ -271,6 +279,8 @@ delay:
 ; di - from
 ; destroys: bx
 fill_with_pattern:
+    push cx
+
     mov bx, VIDEO_MEM
     mov es, bx
     shl dx, 1
@@ -293,6 +303,8 @@ fill_with_pattern:
     inc si
     loop .loop
 
+    shr dx, 1
+    pop cx
     ret
 
 ; ax - color + char 
