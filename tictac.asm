@@ -114,7 +114,7 @@ start:
     call reset
 
 ; show logo for some time
-    mov cl, 0xa0
+    mov cl, 0x50
     call delay
 
 ; scroll to playfield
