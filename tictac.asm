@@ -79,18 +79,17 @@ state  dw 0
 
 board  db 4 dup '1'
        db 4 dup '2'
-       db 2 dup '3' 
-
+       db 2 dup '3'
           
-positions dw (23 * 2) + (6 * 2 * 80)
-          dw (38 * 2) + (6 * 2 * 80)
-          dw (53 * 2) + (6 * 2 * 80)
-          dw (23 * 2) + (11 * 2 * 80)
-          dw (38 * 2) + (11 * 2 * 80)
-          dw (53 * 2) + (11 * 2 * 80)
-          dw (23 * 2) + (16 * 2 * 80)
-          dw (38 * 2) + (16 * 2 * 80)
-          dw (53 * 2) + (16 * 2 * 80)
+positions dw row_col(6, 23)
+          dw row_col(6, 38)
+          dw row_col(6, 53)
+          dw row_col(11, 23)
+          dw row_col(11, 38)
+          dw row_col(11, 53)
+          dw row_col(16, 23)
+          dw row_col(16, 38)
+          dw row_col(16, 53)
 
 section .text
 
