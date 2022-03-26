@@ -75,7 +75,6 @@ help_len equ $ - help
 
 player db 'Player:  '
 splay  db 0
-state  dw 0
 
 board  db 4 dup '1'
        db 4 dup '2'
@@ -191,14 +190,6 @@ gameloop:
     ; check game state
     call find_line
 
-    mov bx, [state]
-    cmp bx, 9
-    jz call_reset
-
-; update num of moves
-    inc bx
-    mov [state], bx
-
 ; render who is on move
     mov ah, 0x0e
     mov al, byte [splay]
@@ -221,8 +212,6 @@ reset:
     mov byte [splay], 0x58
     mov di, next_screen + row_col(4, 26)
     call put_char
-
-    mov word [state], 0
 
     call init_playfield
     ret
