@@ -77,7 +77,9 @@ player db 'Player:  '
 splay  db 0
 state  dw 0
 
-board  db 10 dup 0
+board  db 4 dup '1'
+       db 4 dup '2'
+       db 2 dup '3' 
 
           
 positions dw (23 * 2) + (6 * 2 * 80)
@@ -187,6 +189,9 @@ gameloop:
     mov cx, cc_sprite_len
     call fill_with_pattern
 
+    ; check game state
+    call find_line
+
     mov bx, [state]
     cmp bx, 9
     jz call_reset
@@ -236,6 +241,58 @@ end:
     ret
 ; end of gameloop
 
+; game logic
+find_line:
+    mov al, [board]
+    cmp al, [board + 1]
+    jne b01
+    cmp al, [board + 2]
+    je won
+b01:
+    cmp al, [board + 3]
+    jne b04
+    cmp al, [board + 6]
+    je won
+b04:
+    cmp al, [board + 4]
+    jne b05
+    cmp al, [board + 8]
+    je won
+b05:
+    mov al, [board + 3]
+    cmp al, [board + 4]
+    jne b02
+    cmp al, [board + 5]
+    je won
+b02:    
+    mov al, [board + 6]
+    cmp al, [board + 7]
+    jne b03
+    cmp al, [board + 8]
+    je won
+b03:
+    mov al, [board + 1]
+    cmp al, [board + 4]
+    jne b06
+    cmp al, [board + 7]
+    je won
+b06:
+    mov al, [board + 2]
+    cmp al, [board + 5]
+    jne b07
+    cmp al, [board + 8]
+    je won
+b07:
+    cmp al, [board + 4]
+    jne b08
+    cmp al, [board + 6]
+    je won
+b08:
+    ret
+
+won:
+    jmp call_reset
+
 
 render_playfield:
     ; render playfield
@@ -268,15 +325,11 @@ render_playfield:
     set_playground_parts_opti 20, line_full
     ret
 
-
-  
-
-
 ; clear 10 bytes
 init_playfield:
-    mov dword [board], 0
-    mov dword [board + 4], 0
-    mov word [board + 8], 0
+    mov dword [board], '1'
+    mov dword [board + 4], '2'
+    mov word [board + 8], '3'
     ret
 
 interrupt:
