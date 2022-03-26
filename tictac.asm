@@ -77,23 +77,18 @@ player db 'Player:  '
 splay  db 0
 state  dw 0
 
-board   dw 0
-        dw 0
-        dw 0
-        dw 0
-        dw 0
+board  db 10 dup 0
 
           
-positions dw (23 * 2)
-          dw (38 * 2)
-          dw (53 * 2)
-          dw (23 * 2)
-          dw (38 * 2)
-          dw (53 * 2)
-          dw (23 * 2)
-          dw (38 * 2)
-          dw (53 * 2)
-          dw (23 * 2)
+positions dw (23 * 2) + (6 * 2 * 80)
+          dw (38 * 2) + (6 * 2 * 80)
+          dw (53 * 2) + (6 * 2 * 80)
+          dw (23 * 2) + (11 * 2 * 80)
+          dw (38 * 2) + (11 * 2 * 80)
+          dw (53 * 2) + (11 * 2 * 80)
+          dw (23 * 2) + (16 * 2 * 80)
+          dw (38 * 2) + (16 * 2 * 80)
+          dw (53 * 2) + (16 * 2 * 80)
 
 section .text
 
@@ -151,26 +146,33 @@ start:
 gameloop:
 
     call read_key
-    ; ESC for exit
-    cmp al, 0x1b
-    jz end
+    cmp al, 0x1b	; Esc key pressed?
+    je end		    ; Yes, exit
     ; X key for reset
     cmp al, 0x78
     jz call_reset
 
-    ; position of X or O
-    mov bx, [state]
-    shl bx, 1
-    ; positions are multiplied by 2 - column part
-    mov di, next_screen
-    add di, [positions + bx]
-    ; row (line) part
-    mov bx, 6
-    mov ax, 160
-    mul bx
-    add di, ax
+    sub al, 0x31		; Subtract code for ASCII digit 1
+    jc gameloop	    ; Is it less than? Wait for another key
+    cmp al, 0x09		; Comparison with 9
+    jnc gameloop	; Is it greater than or equal to? Wait
+    cbw			; Expand AL to 16 bits using AH.
+    mov bx, ax
+    mov al, [board + bx]		; Get square content
+    cmp al, 0x40		; Comparison with 0x40
+    jnc gameloop	; Is it greater than or equal to? Wait
 
-    cmp byte [splay], 0x58
+    mov al, byte [splay]
+    mov byte [board + bx], al
+
+    ; don't touch al please
+    ; lookup table for X or O placement
+    mov di, next_screen
+    shl bx, 1
+    add di, [positions + bx]
+
+    ; set player on move
+    cmp al, 0x58
     mov si, circle
     mov byte [splay], 0x58
     jnz .render
@@ -265,6 +267,10 @@ render_playfield:
 
     set_playground_parts_opti 20, line_full
     ret
+
+
+  
+
 
 ; clear 10 bytes
 init_playfield:
