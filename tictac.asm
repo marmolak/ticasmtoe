@@ -66,6 +66,13 @@ circle db   " OOOO ", 0
        db   "OO  OO", 0
        db   " OOOO ", 0
 
+help    db "1|2|3", 0
+        db "-+-+-", 0
+        db "4|5|6", 0
+        db "-+-+-", 0
+        db "7|8|9", 0
+help_len equ $ - help
+
 player db 'Player:  '
 splay  db 0
 state  dw 0
@@ -104,6 +111,9 @@ start:
     ; show logo
     ;       move rows    move columns
     render_sprite 0, 5, 18, 44, 0x0e, logo, logo_len
+
+    ; render it once
+    render_sprite next_screen, 20, 1, 5, 0x0e, help, help_len
 
     ; render playfield and init game
     call reset
