@@ -17,3 +17,10 @@
 
 
 Reimagine tictactoe in 8086/386 intel assembly based on code from Bootsector games book.
+
+## How to play
+
+Use keys from 1 to 9 (more help is on left bottom corner in game).
+
+Use X key for game reset.
+
