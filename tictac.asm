@@ -73,7 +73,7 @@ help    db "1|2|3", 0
         db "7|8|9", 0
 help_len equ $ - help
 
-player db 'Player:  '
+player db 'Player:   won!'
 splay  db 0
 
 board  db 4 dup '1'
@@ -279,7 +279,21 @@ b08:
     ret
 
 won:
-    jmp call_reset
+    set_playground_parts 24, 18, 0x0e, player, 14
+    mov ah, 0x0e
+    mov al, byte [splay]
+    cmp al, 0x58
+    mov al, 0x4f
+    jz .next
+    mov al, 0x58
+.next:
+    mov di, next_screen + row_col(24, 26)
+    call put_char
+.nothing
+    call read_key
+    cmp al, 0x78
+    jz call_reset
+    jmp .nothing
 
 
 render_playfield:
