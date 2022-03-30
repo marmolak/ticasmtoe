@@ -76,6 +76,9 @@ help_len equ $ - help
 player db 'Player:   won!'
 splay  db 0
 
+interrupt_offset    dw 0
+interrupt_segment   dw 0
+
 board  db 4 dup '1'
        db 4 dup '2'
        db 2 dup '3'
@@ -98,10 +101,17 @@ start:
     ; set 0x1c interrup vector
     xor ax, ax
     mov es, ax
-    mov bx, cs
+
+    ; save old interrupt handler
     cli
+
+    es mov bx, [0x1c * 4]
+    mov word [interrupt_offset], bx
+    es mov bx, [0x1c * 4 + 2]
+    mov word [interrupt_segment], bx
+
     es mov word [0x1c * 4], interrupt  ; offset
-    es mov word [0x1c * 4 + 2], bx     ; segment
+    es mov word [0x1c * 4 + 2], cs     ; segment
     sti
 
 
@@ -222,6 +232,14 @@ reset:
     ret
     
 end:
+    ; restore old interrupt handler
+    cli
+    mov bx, [interrupt_offset]
+    es mov word [0x1c * 4], bx
+    mov bx, [interrupt_segment]
+    es mov word [0x1c * 4 + 2], bx
+    sti
+
     ; reset viewport
     xor cx, cx
     call hw_scroll
@@ -230,7 +248,9 @@ end:
     set_text_mode
 
     ; exit
-    ; only ret works on dosbox but doesn't work on real hw
+    ; only 'ret' works on dosbox but doesn't work on real hw
+
+
     int 0x20
 ; end of gameloop
 
@@ -305,7 +325,7 @@ render_playfield:
     ; render playfield
 
     mov cx, 46
-    mov dx, 46
+    mov dx, cx
     mov ah, 0x0e
 
     set_playground_parts_opti 5, line_full
@@ -349,14 +369,11 @@ interrupt:
 
 ; cx - ticks - 1 is ok
 delay:
-    push cx
-
     mov [delay_val], cx
 .delay:
     cmp word [delay_val], 0
     jnz .delay
 
-    pop cx
     ret
 
 ; ah - color
