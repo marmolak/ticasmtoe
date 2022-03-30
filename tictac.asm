@@ -1,5 +1,6 @@
 bits 16
 org 0x100
+align 16
 
 %define VIDEO_MEM 0xb800
 
@@ -38,7 +39,6 @@ org 0x100
 
 
 section .data
-delay_val: db 0
 
 logo    db "          _                _    _           ", 0
         db "         | |              | |  ( )          ", 0
@@ -93,12 +93,17 @@ positions dw row_col(6, 23)
 section .text
 
 start:
+    delay_val: dw 0x9090
 
     ; set 0x1c interrup vector
     xor ax, ax
     mov es, ax
+    mov bx, cs
+    cli
     es mov word [0x1c * 4], interrupt  ; offset
-    es mov word [0x1c * 4 + 2], cs     ; segment
+    es mov word [0x1c * 4 + 2], bx     ; segment
+    sti
+
 
     ; switch to text mode
     set_text_mode
@@ -114,7 +119,7 @@ start:
     call reset
 
 ; show logo for some time
-    mov cl, 0x50
+    mov cx, 0x50
     call delay
 
 ; scroll to playfield
@@ -137,7 +142,7 @@ start:
     mov cx, ax
     call hw_scroll
 
-    mov cl, 0x01
+    mov cx, 0x01
     call delay
 
     cmp si, 26
@@ -225,8 +230,8 @@ end:
     set_text_mode
 
     ; exit
-    ; poor man's: int 0x20
-    ret
+    ; only ret works on dosbox but doesn't work on real hw
+    int 0x20
 ; end of gameloop
 
 ; game logic
@@ -289,7 +294,7 @@ won:
 .next:
     mov di, next_screen + row_col(24, 26)
     call put_char
-.nothing
+.nothing:
     call read_key
     cmp al, 0x78
     jz call_reset
@@ -335,26 +340,23 @@ init_playfield:
     ret
 
 interrupt:
-    pusha
+    pushf
 
-    dec byte [delay_val]
+    cs dec word [delay_val]
 
-    popa
+    popf
     iret
 
-; cl - ticks - 1 is ok
+; cx - ticks - 1 is ok
 delay:
-    push ax
     push cx
 
-    mov byte [delay_val], cl
+    mov [delay_val], cx
 .delay:
-    mov al, [delay_val]
-    cmp al, 0
+    cmp word [delay_val], 0
     jnz .delay
 
     pop cx
-    pop ax
     ret
 
 ; ah - color
