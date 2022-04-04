@@ -317,8 +317,12 @@ won:
     call put_char
 .nothing:
     call read_key
+    ; X key for reset
     cmp al, 0x78
     jz call_reset
+    ; ESC key
+    cmp al, 0x1b
+    je end
     jmp .nothing
 
 
