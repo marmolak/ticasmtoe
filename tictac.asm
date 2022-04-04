@@ -157,6 +157,14 @@ start:
 
     cmp si, 26
     jnz .loop
+
+    ; restore old interrupt handler - we don't need delay any more
+    cli
+    mov bx, [interrupt_offset]
+    es mov word [0x1c * 4], bx
+    mov bx, [interrupt_segment]
+    es mov word [0x1c * 4 + 2], bx
+    sti
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 gameloop:
 
@@ -232,13 +240,6 @@ reset:
     ret
     
 end:
-    ; restore old interrupt handler
-    cli
-    mov bx, [interrupt_offset]
-    es mov word [0x1c * 4], bx
-    mov bx, [interrupt_segment]
-    es mov word [0x1c * 4 + 2], bx
-    sti
 
     ; reset viewport
     xor cx, cx
