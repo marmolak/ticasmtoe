@@ -1,4 +1,5 @@
 bits 16
+cpu 8086
 org 0x100
 align 16
 
@@ -142,11 +143,15 @@ start:
     ;mul di
     mov bx, ax
     ; n<<3 + n<<1 = n*10
-    shl ax, 3
+    shl ax, 1
+    shl ax, 1
+    shl ax, 1
     shl bx, 1
     add ax, bx
     ; n * 8
-    shl ax, 3
+    shl ax, 1
+    shl ax, 1
+    shl ax, 1
 
 
     mov cx, ax
@@ -227,7 +232,36 @@ call_reset:
     jmp gameloop
 
 reset:
-    call render_playfield
+
+;render_playfield:
+    mov cx, 46
+    mov dx, cx
+    mov ah, 0x0e
+
+    set_playground_parts_opti 5, line_full
+
+    set_playground_parts_opti 6, line_columns
+    set_playground_parts_opti 7, line_columns
+    set_playground_parts_opti 8, line_columns
+    set_playground_parts_opti 9, line_columns
+
+    set_playground_parts_opti 10, line_full
+
+    set_playground_parts_opti 11, line_columns
+    set_playground_parts_opti 12, line_columns
+    set_playground_parts_opti 13, line_columns
+    set_playground_parts_opti 14, line_columns
+
+    set_playground_parts_opti 15, line_full
+
+    set_playground_parts_opti 16, line_columns
+    set_playground_parts_opti 17, line_columns
+    set_playground_parts_opti 18, line_columns
+    set_playground_parts_opti 19, line_columns
+
+    set_playground_parts_opti 20, line_full
+; render playfield end
+
     set_playground_parts 4, 18, 0x0e, player, 9
 
     ; X
@@ -236,7 +270,16 @@ reset:
     mov di, next_screen + row_col(4, 26)
     call put_char
 
-    call init_playfield
+; clear 10 bytes
+;init_playfield:
+    mov bx, ds
+    mov es, bx
+; repurpose position as cleanup pattern. Values are smaller than 0x40 it's ok.
+    mov si, positions + 1
+    mov di, board
+    mov cx, 5
+    rep movsw
+
     ret
     
 end:
@@ -325,44 +368,6 @@ won:
     je end
     jmp .nothing
 
-
-render_playfield:
-    ; render playfield
-
-    mov cx, 46
-    mov dx, cx
-    mov ah, 0x0e
-
-    set_playground_parts_opti 5, line_full
-
-    set_playground_parts_opti 6, line_columns
-    set_playground_parts_opti 7, line_columns
-    set_playground_parts_opti 8, line_columns
-    set_playground_parts_opti 9, line_columns
-
-    set_playground_parts_opti 10, line_full
-
-    set_playground_parts_opti 11, line_columns
-    set_playground_parts_opti 12, line_columns
-    set_playground_parts_opti 13, line_columns
-    set_playground_parts_opti 14, line_columns
-
-    set_playground_parts_opti 15, line_full
-
-    set_playground_parts_opti 16, line_columns
-    set_playground_parts_opti 17, line_columns
-    set_playground_parts_opti 18, line_columns
-    set_playground_parts_opti 19, line_columns
-
-    set_playground_parts_opti 20, line_full
-    ret
-
-; clear 10 bytes
-init_playfield:
-    mov dword [board], '1'
-    mov dword [board + 4], '2'
-    mov word [board + 8], '3'
-    ret
 
 interrupt:
     pushf
