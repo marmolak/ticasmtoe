@@ -131,7 +131,7 @@ start:
 
 ; show logo for some time
     mov cx, 0x50
-    call delay
+    call delay_can_break
 
 ; scroll to playfield
     mov di, 80
@@ -377,7 +377,7 @@ interrupt:
     popf
     iret
 
-; cx - ticks - 1 is ok
+; cx - ticks
 delay:
     mov [delay_val], cx
 .delay:
@@ -385,6 +385,28 @@ delay:
     jnz .delay
 
     ret
+
+; this routine can be break by keyboard
+; cx - ticks
+delay_can_break:
+    push ax
+    mov [delay_val], cx
+.delay:
+    mov ah, 1
+    int 0x16
+    jnz .swallow
+.delay_check:
+    cmp word [delay_val], 0
+    jnz .delay
+
+.delay_end:
+    pop ax
+    ret
+
+.swallow:
+    xor ax, ax
+    int 0x16
+    jmp .delay_end
 
 ; ah - color
 ; cx - len
