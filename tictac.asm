@@ -105,11 +105,10 @@ start:
 
     ; save old interrupt handler
     cli
-
-    es mov bx, [0x1c * 4]
-    mov word [interrupt_offset], bx
-    es mov bx, [0x1c * 4 + 2]
-    mov word [interrupt_segment], bx
+    es mov ax, [0x1c * 4]
+    mov word [interrupt_offset], ax
+    es mov ax, [0x1c * 4 + 2]
+    mov word [interrupt_segment], ax
 
     es mov word [0x1c * 4], interrupt  ; offset
     es mov word [0x1c * 4 + 2], cs     ; segment
@@ -117,6 +116,7 @@ start:
 
 
     ; switch to text mode
+    xor ax, ax
     set_text_mode
 
     ; show logo
@@ -165,10 +165,10 @@ start:
 
     ; restore old interrupt handler - we don't need delay any more
     cli
-    mov bx, [interrupt_offset]
-    es mov word [0x1c * 4], bx
-    mov bx, [interrupt_segment]
-    es mov word [0x1c * 4 + 2], bx
+    mov ax, [interrupt_offset]
+    es mov word [0x1c * 4], ax
+    mov ax, [interrupt_segment]
+    es mov word [0x1c * 4 + 2], ax
     sti
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 gameloop:
