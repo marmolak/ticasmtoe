@@ -98,6 +98,13 @@ section .text
 start:
     delay_val: dw 0x9090
 
+    ; disable ray
+    mov dx, 0x3D8
+    in al, dx
+
+    and al, 0x0F7
+    out dx, al
+
     ; set 0x1c interrup vector
     xor ax, ax
     mov es, ax
@@ -113,7 +120,6 @@ start:
     es mov word [0x1c * 4 + 2], cs     ; segment
     sti
 
-
     ; switch to text mode
     xor ax, ax
     set_text_mode
@@ -127,6 +133,12 @@ start:
 
     ; render playfield and init game
     call reset
+
+    ; enable ray
+    mov dx, 0x3D8
+    in al, dx
+    or al, 0x8
+    out dx, al
 
 ; show logo for some time
     mov cx, 0x50
