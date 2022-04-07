@@ -22,7 +22,6 @@ align 16
 
 ; ah, dx and cx must be initialized before using this macro
 %macro set_playground_parts_opti 2
-    ;mov di, (next_screen + (80 * (%1) * 2) + (18 * 2))
     mov di, next_screen + row_col((%1), 18)
     mov si, (%2)
     call fill_with_pattern
@@ -74,8 +73,8 @@ help    db "1|2|3", 0
         db "7|8|9", 0
 help_len equ $ - help
 
-player db 'Player:   won!'
-splay  db 0
+player db 'Player: X won!'
+splay  equ next_screen + row_col(4, 26)
 
 interrupt_offset    dw 0
 interrupt_segment   dw 0
@@ -143,18 +142,16 @@ start:
     ;mul di
     mov bx, ax
     ; n<<3 + n<<1 = n*10
-    shl ax, 1
-    shl ax, 1
-    shl ax, 1
+    mov cl, 3
+    shl ax, cl
+
     shl bx, 1
     add ax, bx
     ; n * 8
-    shl ax, 1
-    shl ax, 1
-    shl ax, 1
+    mov cl, 3
+    shl ax, cl
 
-
-    mov cx, ax
+    xchg cx, ax
     call hw_scroll
 
     mov cx, 0x01
@@ -185,7 +182,7 @@ gameloop:
     cmp al, 0x09		; Comparison with 9
     jnc gameloop	; Is it greater than or equal to? Wait
     cbw			; Expand AL to 16 bits using AH.
-    mov bx, ax
+    xchg bx, ax
     mov al, [board + bx]		; Get square content
     cmp al, 0x40		; Comparison with 0x40
     jnc gameloop	; Is it greater than or equal to? Wait
