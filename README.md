@@ -24,3 +24,7 @@ Use keys from 1 to 9 (more help is on left bottom corner in game).
 
 Use X key for game reset.
 
+## Git tags
+
+* `i386-tested` - runs on i386 and has been test on real hardware.
+* `i8086-tested` - runs on i8086 (Commodore PC-20-III) and has been test on real hardware.
